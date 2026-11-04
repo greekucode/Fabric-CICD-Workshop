@@ -1,10 +1,43 @@
 import argparse
 import csv
+import math
+
+REQUIRED_COLUMNS = ("region", "amount")
 
 
-def load_rows(path):
+class CsvInputError(ValueError):
+    """Raised when the sales CSV is not valid input."""
+
+
+def validate_row(row: dict, line: int) -> dict[str, str]:
+    if None in row or any(value is None for value in row.values()):
+        raise CsvInputError(f"line {line}: malformed row (wrong number of fields)")
+    region = row["region"].strip()
+    if not region:
+        raise CsvInputError(f"line {line}: region must not be blank")
+    amount = row["amount"].strip()
+    try:
+        value = float(amount)
+    except ValueError:
+        raise CsvInputError(f"line {line}: invalid amount {amount!r}") from None
+    if not math.isfinite(value) or value < 0:
+        raise CsvInputError(
+            f"line {line}: amount must be a finite, nonnegative number, got {amount!r}"
+        )
+    return {"region": region, "amount": amount}
+
+
+def load_rows(path) -> list[dict[str, str]]:
     with open(path, newline="", encoding="utf-8-sig") as source:
-        return list(csv.DictReader(source))
+        reader = csv.DictReader(source)
+        if reader.fieldnames is None:
+            raise CsvInputError("file is empty; expected header 'region,amount'")
+        missing = [name for name in REQUIRED_COLUMNS if name not in reader.fieldnames]
+        if missing:
+            raise CsvInputError(
+                f"line 1: missing required column(s): {', '.join(missing)}"
+            )
+        return [validate_row(row, reader.line_num) for row in reader]
 
 
 def summarize(rows):
@@ -33,7 +66,7 @@ def main():
             if not rows:
                 parser.exit(2, f"Error: unknown region: {args.region}\n")
         totals, average = summarize(rows)
-    except (OSError, ValueError) as error:
+    except (OSError, ValueError, csv.Error) as error:
         parser.exit(2, f"Error: {error}\n")
     for region, amount in sorted(totals.items()):
         print(f"{region}: {amount:.2f}")
