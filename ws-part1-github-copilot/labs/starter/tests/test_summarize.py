@@ -24,6 +24,10 @@ def test_average_is_mean_of_regional_totals():
     assert average == 475 / 3
 
 
+def test_header_only_csv_has_empty_summary():
+    assert summarize(load_rows(DATA / "empty.csv")) == ({}, 0.0)
+
+
 def run_report(*args):
     script = Path(__file__).resolve().parents[1] / "summarize.py"
     return subprocess.run(
@@ -58,4 +62,12 @@ def test_default_command_line_report_is_unchanged():
         "East: 150.00\nNorth: 75.00\nWest: 250.00\n"
         "Average per region: 158.33\n"
     )
+    assert result.stderr == ""
+
+
+def test_header_only_command_line_report_is_empty_summary():
+    result = run_report(str(DATA / "empty.csv"))
+
+    assert result.returncode == 0
+    assert result.stdout == "Average per region: 0.00\n"
     assert result.stderr == ""
