@@ -1,13 +1,60 @@
 import argparse
 import csv
+import math
+from pathlib import Path
 
 
-def load_rows(path):
+def load_rows(path: str | Path) -> list[dict[str, str]]:
+    rows = []
     with open(path, newline="", encoding="utf-8-sig") as source:
-        return list(csv.DictReader(source))
+        reader = csv.DictReader(source, strict=True)
+        try:
+            fieldnames = reader.fieldnames
+            missing_columns = {"region", "amount"} - set(fieldnames or [])
+            if missing_columns:
+                missing = ", ".join(sorted(missing_columns))
+                raise ValueError(f"CSV is missing required columns: {missing}")
+
+            for row in reader:
+                line_number = reader.line_num
+                if None in row:
+                    raise ValueError(
+                        f"line {line_number}: malformed row has too many fields"
+                    )
+                if any(value is None for value in row.values()):
+                    raise ValueError(
+                        f"line {line_number}: malformed row has too few fields"
+                    )
+
+                region = row["region"].strip()
+                if not region:
+                    raise ValueError(f"line {line_number}: region must not be blank")
+
+                try:
+                    amount = float(row["amount"])
+                except ValueError as error:
+                    raise ValueError(
+                        f"line {line_number}: amount must be numeric"
+                    ) from error
+                if not math.isfinite(amount):
+                    raise ValueError(
+                        f"line {line_number}: amount must be finite"
+                    )
+                if amount < 0:
+                    raise ValueError(
+                        f"line {line_number}: amount must be nonnegative"
+                    )
+
+                row["region"] = region
+                rows.append(row)
+        except csv.Error as error:
+            raise ValueError(
+                f"line {reader.line_num + 1}: malformed CSV: {error}"
+            ) from error
+    return rows
 
 
-def summarize(rows):
+def summarize(rows: list[dict[str, str]]) -> tuple[dict[str, float], float]:
     totals = {}
     for row in rows:
         region = row["region"]
@@ -21,7 +68,7 @@ def top_region(totals: dict[str, float]) -> tuple[str, float]:
     return min(totals.items(), key=lambda item: (-item[1], item[0]))
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Summarize sales by region.")
     parser.add_argument("path", help="Path to the sales CSV")
     parser.add_argument("--region", help="Filter the report to one region")
