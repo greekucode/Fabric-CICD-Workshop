@@ -4,6 +4,12 @@
 **Starting point:** [03 change and PR](./03-change-and-pr.md) complete.
 **Goal:** promote the reviewed definition without redeploying unrelated items.
 
+## Before You Start
+
+This lab is primarily in the **Fabric portal**. Keep the merged PR and passing
+`main` CI run open in GitHub. Do not create another branch or import a notebook.
+Use the pipeline and workspace names from your attendee config.
+
 ## 1. Confirm the before state
 
 1. Local `main` and Dev are at the reviewed tax release.
@@ -15,6 +21,10 @@
 
 Do not edit Test to create the tax feature. The release source is Dev.
 
+**Checkpoint:** Dev is tax, Test is baseline, and Test's lakehouse already
+exists. If this is not true, finish the previous lab instead of changing the
+deployment selection to compensate.
+
 ## 2. Preview the release
 
 In `wk-pipeline-<suffix>`:
@@ -25,14 +35,18 @@ In `wk-pipeline-<suffix>`:
 4. Confirm `lh_workshop` is already present/paired in Test.
 5. Review the destination, item selection and overwrite warning.
 
-**Copilot alternative**
+**Optional Agent message**, sent before the deployment:
 
-> Read my pipeline/stages/items and preview a selective deployment of only
-> nb_workshop from Development to Test. Confirm the lakehouse dependency already
-> exists and is paired in Test. Use an explicit items list; do not deploy all
-> items. Wait for approval. Poll the resulting operation with a bounded timeout,
-> reporting Failed/Canceled/timeout explicitly. Do not start a second operation
-> while the first is running. Do not deploy to Production.
+```text
+We are doing lab 04 only. Read my pipeline/stages/items and preview a selective
+deployment of only nb_workshop from Development to Test. Show actual workspace
+and item IDs. Confirm the lakehouse dependency exists and is paired in Test.
+Use an explicit items list; do not deploy all items. Wait for approval.
+Poll the resulting operation with a bounded timeout, reporting Failed/Canceled/
+timeout explicitly. Do not start a second operation while the first is running.
+Do not deploy to Production. Inspect Test binding after success, but do not
+run the notebook until I approve its synthetic-table overwrite separately.
+```
 
 Item lists show identity/pairing, not a reliable definition-change status.
 Use portal Compare or a normalized definition diff. A last-deployment timestamp
@@ -49,6 +63,9 @@ does not prove an item has or has not been edited.
 
 An API HTTP 202 means **accepted**, not deployed. A timeout means unresolved,
 not success or permission to submit another deployment.
+
+**Checkpoint:** record the operation ID, terminal result, destination and
+selected notebook. Deployment success does not yet prove the Test data passed.
 
 ## 4. Run Test's persisted-data checks
 
@@ -70,6 +87,18 @@ not success or permission to submit another deployment.
 
 Definitions deploy; data stays as it was until the notebook runs. Before this
 run, a baseline table in Test is expected even though its notebook is already tax.
+
+## 5. Save the Test Release Evidence
+
+1. Record the notebook item ID before and after deployment; they must match.
+2. Save the successful notebook-only operation and its selected-item details.
+3. Save the tax PASS line with Test's workspace identity.
+4. Check the persisted table has three rows, amount total **350.00**, and
+   `amount_with_tax` total **385.00**.
+5. Confirm Production is still untouched and Test still has no Git connection.
+
+Keep this evidence for the Production approval. Do not delete the pipeline or
+Test workspace after this lab.
 
 **Done when:** operation succeeded, only the notebook was selected, its item ID
 is unchanged, and Test's persisted table passes tax checks.

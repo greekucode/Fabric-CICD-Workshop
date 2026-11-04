@@ -4,10 +4,33 @@
 **Starting point:** [01 baseline](./01-baseline.md) complete; Test has baseline.
 **Goal:** version Fabric-generated definitions and establish the PR check.
 
+## Before You Start
+
+Open the **attendee root**, not the workshop materials repository. All commands
+below run in its local terminal with the attendee virtual environment active.
+Keep the Fabric portal open on your own Dev workspace.
+
+Send this optional message to a regular Agent chat before asking it to help:
+
+```text
+We are doing lab 02 only. Inspect local status, my config and the current
+workspace Git state first. Preview each create, commit, push or Git connection
+with its exact repository, workspace, branch, directory and initialization
+direction. Wait for approval before each mutation. Never read or print tokens.
+Do not implement the tax change, edit tests, connect Test/Production to Git,
+or change Dev away from main. Do not perform future labs early.
+```
+
 ## 1. Publish the attendee starter
 
-From your attendee repository root, review `.gitignore` and confirm no tokens,
-personal files, `.venv` or presenter solutions will be staged.
+1. Confirm VS Code Explorer shows `prepare_release.py` at the opened root.
+2. Review `.gitignore` and confirm no tokens, personal files, `.venv`, local config
+   or presenter solutions will be staged.
+3. Use your config's **private attendee repository**, not the public materials
+   repository or your Part 1 fork.
+4. If this folder or remote repository was already initialized, inspect its
+   status/remotes and resume the missing steps; do not initialize or recreate it
+   blindly. For a fresh attendee copy, run:
 
 ```text
 git init -b main
@@ -22,6 +45,18 @@ After review and approval:
 git commit -m "Add Fabric CI/CD starter"
 gh repo create <owner>/<repository> --private --source=. --remote=origin --push
 ```
+
+Replace the placeholder before executing; run commit and repository creation
+one at a time. Then verify:
+
+```text
+git remote -v
+git status --short --branch
+gh repo view <owner>/<repository> --json nameWithOwner,isPrivate,url
+```
+
+**Expected:** your configured repository, `isPrivate: true`, and clean local
+`main` tracking `origin/main`. Stop if the remote or visibility is wrong.
 
 Replace `<owner>/<repository>` with your config value. Do not recreate an
 existing repo or force-push. If Git needs an identity, configure your own approved
@@ -48,6 +83,11 @@ if the account flow differs. `gh auth login` does not automatically configure
 Fabric's Git credentials. GitHub API integration requires a configured connection,
 not automatic Azure DevOps credentials.
 
+**Checkpoint:** Fabric shows the intended GitHub account/connection and can
+select your private repository. A successful `gh auth status` alone is not
+this checkpoint. If token creation displays a secret, enter it yourself in
+Fabric; do not ask Copilot to read it or place it in a command.
+
 ## 3. Connect Dev and commit the real item definitions
 
 1. In **Dev**, open **Workspace settings > Git integration**.
@@ -67,6 +107,9 @@ operations, poll any HTTP 202 operation and verify synchronized heads and no
 pending changes. Never reuse stale head hashes or silently resolve a conflict.
 
 Pull the Fabric-generated commit locally:
+
+First run `git status` and confirm clean `main`. Stop if there is local work
+to preserve. Then run the pull and checks one at a time:
 
 ```text
 git status
@@ -88,18 +131,25 @@ The validator supports `notebook-content.py` and `notebook-content.ipynb`.
 If Fabric emits a different definition format, stop and ask the presenter to
 update the checker to that documented format; do not bypass CI.
 
+**Checkpoint:** the real Fabric-generated definitions are visible both on
+GitHub and locally. A seed notebook or hand-created placeholder item is not
+a substitute. Test and Production remain disconnected from Git.
+
 ## 4. Install the supplied CI workflow
 
-Copy the supplied inactive template into the active GitHub workflow directory:
+Copy the supplied inactive template into the active GitHub workflow directory.
+First check whether `.github/workflows/validate.yml` already exists. If it does,
+compare it with the template and approve any replacement instead of blindly
+overwriting it. Choose the command block matching your terminal:
 
-**PowerShell**
+### PowerShell
 
 ```powershell
 New-Item -ItemType Directory -Force .github/workflows
 Copy-Item workflow-templates/validate.yml .github/workflows/validate.yml
 ```
 
-**macOS / WSL / Ubuntu**
+### macOS / WSL / Ubuntu
 
 ```bash
 mkdir -p .github/workflows
@@ -123,7 +173,9 @@ git push
 gh run list --workflow validate.yml --limit 3
 ```
 
-Open the latest run URL in GitHub and wait for job **validate** to pass.
+Open **Actions** in your private repository, select the run for this pushed
+commit, and wait for job **validate** to pass. Alternatively, use `gh run view
+<run-id> --web` with the ID from the run list.
 If organization policy blocks Actions or the pinned action versions, ask the
 admin/presenter for the approved equivalent; do not weaken organization controls.
 If branch protection is available, make `validate` required on `main`.
@@ -140,6 +192,10 @@ git push -u origin feature/sales-tax
 
 Creating a branch pushes no feature change yet.
 Dev stays attached to `main`.
+
+Confirm `git branch --show-current` reports `feature/sales-tax` and
+`git status --short` is empty. If the branch already exists, inspect it rather
+than deleting/recreating it. Do not apply the feature until lab 03.
 
 ## 6. Create the isolated developer workspace
 
@@ -158,9 +214,36 @@ Dev stays attached to `main`.
    Expect baseline PASS and this workspace's name.
 8. Re-run local strict validation if Fabric added a binding commit.
 
+After any Fabric binding commit, run these from your attendee terminal before
+local editing resumes:
+
+```text
+git status --short
+git pull --ff-only
+python checks/validate_items.py --require-items
+python -m unittest discover -s tests -v
+```
+
+Run the pull only with a clean tree. **Expected:** active release is still
+baseline and all 12 tests pass. Do not let the local editor and Fabric commit
+to the feature branch concurrently.
+
 Do not switch Dev's connected branch. One connected workspace has one branch;
 the extra workspace provides isolation. Workspace relations/preview branch-out
 features are not needed.
+
+## 7. Check the Branch Map
+
+| Location | Expected connection/state |
+| --- | --- |
+| Local attendee repository | `feature/sales-tax`, clean, baseline |
+| Dev | `main`, `/fabric`, synchronized baseline |
+| Developer workspace | `feature/sales-tax`, `/fabric`, synchronized baseline |
+| Test | Baseline; no Git connection |
+| Production | Empty; no Git connection |
+
+Keep the feature branch and all workspaces for the next lab. Save the passing
+CI run URL; do not put the GitHub token in your evidence.
 
 **Done when:** Dev -> `main`, developer workspace -> `feature/sales-tax`,
 Test/Production -> no Git; initial CI is green; all working notebooks are baseline.
