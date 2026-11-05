@@ -109,6 +109,70 @@ workspace identity as evidence; do not capture tokens in screenshots.
 For Copilot, request a read-only inventory first, then a preview of the pipeline
 and assignments. Resolve actual IDs from lists; never invent GUIDs.
 
+### Optional Agent alternative to portal setup
+
+Send these messages **one at a time**, reviewing the inventory before requesting
+setup. Names come from your local config, so these prompts work with your suffix.
+
+**First message: read-only inventory**
+
+```text
+We are doing Lab 01, step 4 only. Read workshop-config.local.json
+for names. Perform a read-only inventory; make no changes.
+
+List accessible Fabric deployment pipelines. Resolve my Dev, Test
+and lab Production workspaces by name and report their actual IDs,
+capacity assignments and my workspace roles.
+
+If the configured deployment pipeline exists, list its ordered
+stages, workspace assignments and my pipeline role. Check whether
+my three workspaces are already assigned to any accessible pipeline.
+
+Report whether the intended mapping is ready:
+Development -> configured Dev workspace
+Test -> configured Test workspace
+Production -> configured lab Production workspace
+
+Flag missing permissions, conflicting assignments, duplicate names
+or anything you cannot verify. Do not assume a matching name proves
+a resource belongs to this lab.
+
+Do not create, assign, unassign, delete, deploy, connect Git,
+change permissions or modify local files. Stop after the report.
+```
+
+**Second message: preview setup, then wait for approval**
+
+```text
+We are doing Lab 01, step 4 only. Use workshop-config.local.json
+and refresh the inventory before proposing changes.
+
+Preview creating only the configured Fabric deployment pipeline
+with exactly three ordered stages:
+1. Development -> configured Dev workspace
+2. Test -> configured Test workspace
+3. Production -> configured lab Production workspace
+
+Resolve all workspace, pipeline and stage IDs from actual lists.
+Verify the permissions required to create the pipeline and assign
+each workspace. Show the exact proposed changes and wait for my
+explicit approval before executing anything.
+
+If the pipeline already exists, do not create a duplicate or
+delete/recreate it. Report its state and request confirmation
+before reuse. If a workspace is assigned elsewhere or a stage has
+a different workspace, stop; do not unassign or replace anything.
+
+After approval, execute only the approved creation and assignments.
+Read back the pipeline, stage order, workspace assignments and my
+pipeline Admin role to verify the result. If anything fails, report
+what succeeded and stop without destructive cleanup.
+
+Do not deploy content, import items, run notebooks, connect Git,
+create workspaces or capacities, change permissions, or perform
+later lab steps.
+```
+
 **Checkpoint:** read the three stage-to-workspace assignments aloud or record
 them before proceeding. No deployment has happened simply by assigning stages.
 
@@ -131,15 +195,83 @@ them before proceeding. No deployment has happened simply by assigning stages.
 The notebook's cross-workspace guard blocks accidental writes back into Dev,
 but binding must still be inspected before every target run.
 
-**Optional Agent message** to send before executing step 5:
+### Optional Agent alternative to portal deployment and verification
+
+Send this before performing this section. It previews all deployable source
+items and requires separate approvals for deployment, any binding correction,
+and notebook execution.
 
 ```text
-Preview deploying only lh_workshop and nb_workshop from Development to Test
-in my workshop pipeline. Show source/destination names, actual IDs and items.
-Wait for my approval. Track the deployment to a terminal result with a bounded
-timeout; report any failure instead of retrying. Confirm target notebook/lakehouse
-binding before proposing a separately approved run. Do not deploy to Production
-or assume table rows were copied.
+We are doing Lab 01, step 5 only. Read workshop-config.local.json
+for names. Inspect state first; do not make changes yet.
+
+Resolve the configured deployment pipeline, stages and workspaces
+from actual lists. Verify Development maps to my Dev workspace
+and Test maps to my Test workspace. Check required permissions
+and whether a deployment is already running.
+
+List all deployable items in Development and existing Test items,
+including their deployment pairing. Preview deploying ALL
+deployable items from Development to Test, with note
+"baseline to Test". Explain which target items would be created
+or overwritten. Deployment copies definitions, not table rows.
+
+For this lab, expect lh_workshop and nb_workshop. Do not select
+the automatically generated SQL analytics endpoint separately.
+If other user-created items or conflicting Dev/Test assignments
+are found, stop and report them. An unassigned Production stage
+does not block this Dev-to-Test operation; report it without
+changing it.
+
+Show the exact item list, direction and target workspace.
+Wait for my explicit approval before deploying.
+
+After approval, deploy all previewed deployable items.
+Monitor the operation until it succeeds or fails, with a bounded
+timeout. Report:
+- Deployment status and operation ID
+- Source and target stage/workspace names
+- Each deployed item's name, type and target ID
+- Any errors or warnings
+
+Do not retry blindly or claim success without verification.
+If monitoring times out, report the existing operation ID and
+stop without submitting another deployment.
+
+After successful deployment, inspect Test's deployed nb_workshop.
+Verify its default lakehouse is Test's lh_workshop, not Dev's,
+and verify lakehouse schemas are enabled with dbo available.
+If a binding correction is needed, preview it and wait for
+separate approval before changing it. Record any correction and
+restart the interactive session after a binding change.
+
+Before notebook execution, show Test's workspace and lakehouse
+names/IDs. Request separate approval to run the notebook and
+overwrite only the synthetic lh_workshop.dbo.sales_wk table,
+including its schema.
+
+After run approval, run the deployed Test notebook once, wait
+for completion with a bounded timeout, and show its actual
+verification output. If monitoring times out, report the existing
+job ID and stop without resubmitting.
+Expected:
+PASS: release=baseline; rows=3; amount=350.00
+
+Confirm the printed workspace identity is Test's and persisted
+data contains exactly:
+Online 100.00
+Store 200.00
+Partner 50.00
+
+Confirm the columns are channel and amount, with no tax column.
+Distinguish deployment success from notebook-run success.
+If output cannot be retrieved or numeric values cannot be decoded,
+say verification is incomplete and direct me to inspect the
+existing run's output in Fabric. Do not present expected output
+as actual output or rerun the notebook just to retrieve output.
+
+Do not import items, deploy to Production, connect Git, change
+permissions or perform later lab steps.
 ```
 
 ## 6. Record the Baseline Checkpoint

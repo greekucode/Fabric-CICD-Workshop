@@ -23,44 +23,55 @@ or change Dev away from main. Do not perform future labs early.
 
 ## 1. Publish the attendee starter
 
-1. Confirm VS Code Explorer shows `prepare_release.py` at the opened root.
-2. Review `.gitignore` and confirm no tokens, personal files, `.venv`, local config
-   or presenter solutions will be staged.
-3. Use your config's **private attendee repository**, not the public materials
-   repository or your Part 1 fork.
-4. If this folder or remote repository was already initialized, inspect its
-   status/remotes and resume the missing steps; do not initialize or recreate it
-   blindly. For a fresh attendee copy, run:
+Git, GitHub CLI and sign-in were covered in Part 1; no need to repeat that setup.
 
-```text
+1. Open your **Part 2 attendee folder** in VS Code. You should see
+   `prepare_release.py` at the root.
+2. Review `.gitignore` before publishing: exclude tokens, personal files,
+   `.venv`, local config and presenter solutions.
+3. Publish this starter to your **public Part 2 attendee repository**, using the
+   repository name in your config—not the workshop materials repository or your
+   Part 1 fork. If already published, skip straight to verification below.
+
+### Only if needed: publish a fresh starter
+
+If the folder or repository is already initialized, inspect `git status` and
+`git remote -v` and complete only the missing steps. Do not recreate an existing
+repository or force-push.
+
+For a fresh, uninitialized attendee folder, run these commands one at a time:
+
+```bash
 git init -b main
-git status
 git add .
 git diff --cached
 ```
 
-After review and approval:
+Review the staged files, then commit and create the public repository:
 
-```text
+```bash
 git commit -m "Add Fabric CI/CD starter"
-gh repo create <owner>/<repository> --private --source=. --remote=origin --push
+gh repo create {owner}/{repository} --public --source=. --remote=origin --push
 ```
 
-Replace the placeholder before executing; run commit and repository creation
-one at a time. Then verify:
+- `{owner}`: your GitHub user or organization from your config.
+- `{repository}`: your Part 2 attendee repository name from your config.
 
-```text
+If Git requests an identity, configure your own name/email locally as in Part 1.
+
+### Verify
+
+From the attendee folder, run:
+
+```bash
 git remote -v
 git status --short --branch
-gh repo view <owner>/<repository> --json nameWithOwner,isPrivate,url
+gh repo view --json nameWithOwner,isPrivate,url
 ```
 
-**Expected:** your configured repository, `isPrivate: true`, and clean local
-`main` tracking `origin/main`. Stop if the remote or visibility is wrong.
-
-Replace `<owner>/<repository>` with your config value. Do not recreate an
-existing repo or force-push. If Git needs an identity, configure your own approved
-name/email locally. Keep your team's Co-authored-by policy for assisted commits.
+**Checkpoint:** the remote is your configured Part 2 repository,
+`isPrivate: false`, and local `main` is clean and tracks `origin/main`.
+Stop if the remote or branch is wrong.
 
 The `fabric/README.md` ensures `/fabric` already exists on `main`.
 The notebook under `notebooks/` is an **import seed**, not a Git-native Fabric item.
@@ -134,6 +145,46 @@ update the checker to that documented format; do not bypass CI.
 **Checkpoint:** the real Fabric-generated definitions are visible both on
 GitHub and locally. A seed notebook or hand-created placeholder item is not
 a substitute. Test and Production remain disconnected from Git.
+
+### Optional Agent alternative
+
+With Fabric tools available in Copilot Agent chat, send this instead of performing
+the portal and terminal steps above. GitHub CLI sign-in alone does not provide
+Fabric access; complete step 2 first.
+
+```text
+Help me complete Lab 02, step 3 only.
+
+Read workshop-config.local.json to identify my Dev workspace
+and Part 2 GitHub repository. Inspect their current state first.
+
+Preview connecting Dev to that repository on main, directory /fabric,
+using workspace content as the source. Preserve the existing Dev
+lakehouse and notebook. Wait for my approval before making changes.
+
+If already connected, verify the connection and complete only the
+missing operations. Stop if there are conflicts or unexpected items.
+
+After approval, connect and commit the baseline items with message
+"Add Fabric baseline items". Resolve actual IDs, read current head
+hashes, serialize connection/initialization/sync operations and poll
+any HTTP 202 operation with a bounded timeout. If monitoring times
+out, report the existing operation and stop without resubmitting.
+Verify synchronized heads, no pending changes and the real
+Fabric-generated lakehouse and notebook definitions in GitHub.
+
+Then check that my local repository is clean and on main.
+If so, run these commands one at a time:
+git pull --ff-only
+python checks/validate_items.py --require-items
+python -m unittest discover -s tests -v
+
+Report synchronization and validation results. Expect release=baseline
+and all 12 tests passing. Stop on failure; do not bypass validation.
+Do not connect Test or Production, create branches, or start later steps.
+Never read or print tokens. If credentials need configuring,
+stop and ask me to enter them directly in Fabric.
+```
 
 ## 4. Install the supplied CI workflow
 
